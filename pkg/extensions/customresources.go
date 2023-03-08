@@ -59,6 +59,19 @@ func WaitUntilExtensionObjectReady(
 	return WaitUntilObjectReadyWithHealthFunction(ctx, c, log, health.CheckExtensionObject, obj, kind, interval, severeThreshold, timeout, postReadyFunc)
 }
 
+func WaitUntilExtensionObjectStatusUpdated(
+	ctx context.Context,
+	c client.Client,
+	log logr.Logger,
+	obj extensionsv1alpha1.Object,
+	kind string,
+	interval time.Duration,
+	severeThreshold time.Duration,
+	timeout time.Duration,
+) error {
+	return WaitUntilObjectReadyWithHealthFunction(ctx, c, log, health.CheckExtensionObjectStatusUpdate, obj, kind, interval, severeThreshold, timeout, nil)
+}
+
 // WaitUntilObjectReadyWithHealthFunction waits until the given object has become ready. It takes the health check
 // function that should be executed.
 // Passed objects are expected to be filled with the latest state the controller/component

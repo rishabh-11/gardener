@@ -58,6 +58,7 @@ type Interface interface {
 	SetInfrastructureProviderStatus(*runtime.RawExtension)
 	SetWorkerNameToOperatingSystemConfigsMap(map[string]*operatingsystemconfig.OperatingSystemConfigs)
 	MachineDeployments() []extensionsv1alpha1.MachineDeployment
+	WaitUntilStatusUpdate(ctx context.Context) error
 }
 
 // Values contains the values used to create a Worker resources.
@@ -297,6 +298,20 @@ func (w *worker) Wait(ctx context.Context) error {
 			w.machineDeployments = w.worker.Status.MachineDeployments
 			return nil
 		},
+	)
+}
+
+// WaitUntilStatusUpdate waits until the status of the Worker resource is updated
+func (w *worker) WaitUntilStatusUpdate(ctx context.Context) error {
+	return extensions.WaitUntilExtensionObjectStatusUpdated(
+		ctx,
+		w.client,
+		w.log,
+		w.worker,
+		extensionsv1alpha1.WorkerResource,
+		w.waitInterval,
+		w.waitSevereThreshold,
+		w.waitTimeout,
 	)
 }
 

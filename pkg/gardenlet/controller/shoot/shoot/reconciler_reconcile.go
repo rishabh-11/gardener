@@ -662,10 +662,15 @@ func (r *Reconciler) runReconcileShootFlow(ctx context.Context, o *operation.Ope
 			Fn:           flow.TaskFn(botanist.DeploySeedGrafana).RetryUntilTimeout(defaultInterval, 2*time.Minute),
 			Dependencies: flow.NewTaskIDs(deploySeedMonitoring),
 		})
+		waitUntilWorkerStatusUpdate = g.Add(flow.Task{
+			Name:         "Waiting until worker status is updated",
+			Fn:           botanist.Shoot.Components.Extensions.Worker.WaitUntilStatusUpdate,
+			Dependencies: flow.NewTaskIDs(deployWorker),
+		})
 		deployClusterAutoscaler = g.Add(flow.Task{
 			Name:         "Deploying cluster autoscaler",
 			Fn:           flow.TaskFn(botanist.DeployClusterAutoscaler).RetryUntilTimeout(defaultInterval, defaultTimeout),
-			Dependencies: flow.NewTaskIDs(waitUntilWorkerReady, deployManagedResourcesForAddons, deployManagedResourceForCloudConfigExecutor),
+			Dependencies: flow.NewTaskIDs(waitUntilWorkerStatusUpdate, deployManagedResourcesForAddons, deployManagedResourceForCloudConfigExecutor),
 		})
 
 		deployExtensionResourcesAfterKAPI = g.Add(flow.Task{

@@ -42,6 +42,21 @@ func CheckExtensionObject(o client.Object) error {
 	return checkExtensionObject(obj.GetGeneration(), status.GetObservedGeneration(), obj.GetAnnotations(), status.GetLastError(), status.GetLastOperation())
 }
 
+func CheckExtensionObjectStatusUpdate(o client.Object) error {
+	obj, ok := o.(extensionsv1alpha1.Object)
+	if !ok {
+		return fmt.Errorf("expected extensionsv1alpha1.Object but got %T", o)
+	}
+
+	status := obj.GetExtensionStatus()
+	observedGeneration := status.GetObservedGeneration()
+	generation := obj.GetGeneration()
+	if observedGeneration != generation {
+		return fmt.Errorf("observed generation outdated (%d/%d)", observedGeneration, generation)
+	}
+	return nil
+}
+
 // ExtensionOperationHasBeenUpdatedSince returns a health check function that checks if an extension Object's last
 // operation has been updated since `lastUpdateTime`.
 func ExtensionOperationHasBeenUpdatedSince(lastUpdateTime metav1.Time) Func {

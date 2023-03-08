@@ -149,6 +149,10 @@ func (a *genericActuator) Reconcile(ctx context.Context, log logr.Logger, worker
 		return fmt.Errorf("failed to generate the machine deployment config: %w", err)
 	}
 
+	if err := a.updateWorkerStatusMachineDeploymentsAndObservedGeneration(ctx, worker, wantedMachineDeployments); err != nil {
+		return fmt.Errorf("failed to update the machine deployments and observed generation in worker status: %w", err)
+	}
+
 	// Wait until all generated machine deployments are healthy/available.
 	if err := a.waitUntilWantedMachineDeploymentsAvailable(ctx, log, cluster, worker, existingMachineDeploymentNames, existingMachineClassNames, wantedMachineDeployments); err != nil {
 		// check if the machine-controller-manager is stuck
@@ -216,9 +220,9 @@ func (a *genericActuator) Reconcile(ctx context.Context, log logr.Logger, worker
 		}
 	}
 
-	if err := a.updateWorkerStatusMachineDeployments(ctx, worker, wantedMachineDeployments); err != nil {
-		return fmt.Errorf("failed to update the machine deployments in worker status: %w", err)
-	}
+	//if err := a.updateWorkerStatusMachineDeploymentsAndObservedGeneration(ctx, worker, wantedMachineDeployments); err != nil {
+	//	return fmt.Errorf("failed to update the machine deployments in worker status: %w", err)
+	//}
 
 	// Cleanup machine dependencies.
 	// TODO(dkistner): Remove in a future release.
@@ -479,7 +483,7 @@ func (a *genericActuator) waitUntilUnwantedMachineDeploymentsDeleted(ctx context
 	})
 }
 
-func (a *genericActuator) updateWorkerStatusMachineDeployments(ctx context.Context, worker *extensionsv1alpha1.Worker, machineDeployments extensionsworkercontroller.MachineDeployments) error {
+func (a *genericActuator) updateWorkerStatusMachineDeploymentsAndObservedGeneration(ctx context.Context, worker *extensionsv1alpha1.Worker, machineDeployments extensionsworkercontroller.MachineDeployments) error {
 	if len(machineDeployments) == 0 {
 		return nil
 	}
@@ -495,6 +499,7 @@ func (a *genericActuator) updateWorkerStatusMachineDeployments(ctx context.Conte
 
 	patch := client.MergeFrom(worker.DeepCopy())
 	worker.Status.MachineDeployments = statusMachineDeployments
+	worker.Status.ObservedGeneration = worker.GetGeneration()
 	return a.client.Status().Patch(ctx, worker, patch)
 }
 
